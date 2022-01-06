@@ -14,6 +14,7 @@ vaccdata <- read_csv("https://www.opendata.nhs.scot/dataset/6dbdd466-45e3-4348-9
 
 #read in locally created manual file for ages 100
 #need to have this in so can widen x-axis so not drop off at 82
+#is Vaccination 100.csv file in root folder (https://github.com/tomfowler31/Ridgeline_Plot_Vaccination) 
 Vaccination_100 <- read_csv("learnr-intro-master/Vaccination 100.csv",
 col_types = cols(Viz_Date = col_date(format = "%d/%m/%Y")))
 
