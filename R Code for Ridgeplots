@@ -1,0 +1,112 @@
+#inspired by https://twitter.com/MathiasLeroy_/status/1470785658537062407 want to recreate for Scotland
+
+# library
+library(tidyverse)
+library(ggridges)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(readr)
+
+#read in data
+#change to be API once working rather than csv
+vaccdata <- read_csv("https://www.opendata.nhs.scot/dataset/6dbdd466-45e3-4348-9ee3-1eac72b5a592/resource/9b99e278-b8d8-47df-8d7a-a8cf98519ac1/download/daily_vacc_age_sex_20220105.csv")
+
+#read in locally created manual file for ages 100
+#need to have this in so can widen x-axis so not drop off at 82
+Vaccination_100 <- read_csv("learnr-intro-master/Vaccination 100.csv",
+col_types = cols(Viz_Date = col_date(format = "%d/%m/%Y")))
+
+#mutate column to ensure union works correct [is imported as a string from CSV]
+Vaccination_100 <- Vaccination_100 %>%
+ mutate (Viz_DateMMYY = month(Viz_Date, label = TRUE, abbr = TRUE))
+
+#rename Date field to mitigate function crossover
+vaccdata <- vaccdata %>%
+  rename(Viz_Date = Date)
+
+#mutate Viz Date from dbl to Date
+vaccdata <- vaccdata %>%
+  mutate(Viz_Date=ymd(Viz_Date))
+
+#numerical month, likely superfluous
+vaccdata <- vaccdata %>% 
+  mutate (Viz_DateMonth = month(Viz_Date))
+
+#mmm for label
+vaccdata <- vaccdata %>% 
+  mutate (Viz_DateMMYY = month(Viz_Date, label = TRUE, abbr = TRUE))
+         
+#exclusion column for passing through only records I want
+#total, rather than male or female
+#exclude AgeGroups that are subtotals, aside from 80+
+vaccdata <- vaccdata %>%
+  mutate (
+    Viz_Include = case_when (
+    #not making Female / Male distinction in first analysis
+    Sex == "Total"  & 
+    (AgeGroup == "80 years and over" ||
+    AgeGroup == "12 to 15" ||
+    AgeGroup == "16 to 17" ||
+    AgeGroup == "18 to 29" ||
+    AgeGroup == "30 to 39" ||
+    AgeGroup == "40 to 49" ||
+    AgeGroup == "50 to 54" ||
+    AgeGroup == "55 to 59" ||
+    AgeGroup == "60 to 64" ||
+    AgeGroup == "65 to 69" ||
+    AgeGroup == "70 to 74" ||
+    AgeGroup == "75 to 79"
+    ) ~ "Y",
+    TRUE ~ "N"
+    )
+    )
+    
+    
+#use numerical midpoint of age bandings based on age group aggregations
+#note - some artistic license used here for 80+ group
+vaccdata <- vaccdata %>%
+  mutate (
+    Viz_ages = case_when (
+      AgeGroup == "12 to 15" ~ 13,
+      AgeGroup == "16 to 17" ~ 16,
+      AgeGroup == "18 to 29" ~ 23,
+      AgeGroup == "30 to 39" ~ 34,
+      AgeGroup == "40 to 49" ~ 44,
+      AgeGroup == "50 to 54" ~ 52,
+      AgeGroup == "55 to 59" ~ 57,
+      AgeGroup == "60 to 64" ~ 62,
+      AgeGroup == "65 to 69" ~ 67,
+      AgeGroup == "70 to 74" ~ 72,
+      AgeGroup == "75 to 79" ~ 77,
+      #arbitarily took age as next 5 year increment
+      AgeGroup == "80 years and over" ~ 82           
+      
+    )
+  )
+#prep dataset for viz to only include relevant rows and 2021
+viz_vaccdata <- vaccdata %>%
+filter(Viz_Include == "Y") %>%
+filter(Viz_ages > 0) %>%
+filter(year(Viz_Date)==2021) %>%
+select(Viz_Date,Sex, AgeGroup,Dose, Viz_ages, NumberVaccinated, Viz_DateMMYY)
+
+#union in Vaccination_100 to include manual data
+full_viz_data <-bind_rows(viz_vaccdata, Vaccination_100)
+
+ggplot(full_viz_data, aes(x=Viz_ages, 
+                          y = Viz_DateMMYY, 
+                          fill = Dose))+
+    geom_density_ridges(alpha=0.5, 
+                        aes(height=..density.., 
+                            weight = NumberVaccinated), 
+                        stat = "density")+
+    theme_classic()+
+    theme(
+        legend.position = "bottom",
+        legend.justification = "center",
+        plot.title = element_text(hjust = 0.5)
+    )+
+    labs(title = "Volume of Vaccinations in Scotland 2021 by month by dose and age band" )+
+    ylab("Month")+
+    xlab("Age")        
