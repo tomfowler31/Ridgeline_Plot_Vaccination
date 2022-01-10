@@ -97,17 +97,20 @@ full_viz_data <-bind_rows(viz_vaccdata, Vaccination_100)
 
 ggplot(full_viz_data, aes(x=Viz_ages, 
                           y = Viz_DateMMYY, 
-                          fill = Dose))+
-    geom_density_ridges(alpha=0.5, 
+                          fill = Dose, colour = Dose))+
+    geom_density_ridges(alpha=0.4, 
                         aes(height=..density.., 
                             weight = NumberVaccinated), 
-                        stat = "density")+
+                        stat = "density", scale = 1.5)+
     theme_classic()+
     theme(
         legend.position = "bottom",
         legend.justification = "center",
         plot.title = element_text(hjust = 0.5)
+
     )+
-    labs(title = "Volume of Vaccinations in Scotland 2021 by month by dose and age band" )+
+    labs(title = "Volume of Vaccinations in Scotland 2021 by month by dose and age band",      
+    caption="Data from https://www.opendata.nhs.scot/ | Inspired by @MathiasLeroy_ & @VictimOfMaths | Plot by @tomfowlerPHS")+
     ylab("Month")+
-    xlab("Age")        
+    xlab("Age")+
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 6))     
