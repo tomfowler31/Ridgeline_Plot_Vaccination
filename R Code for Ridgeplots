@@ -7,14 +7,14 @@ library(ggplot2)
 library(dplyr)
 library(lubridate)
 library(readr)
+library(forcats)
 
 #read in data
 #change to be API once working rather than csv
 vaccdata <- read_csv("https://www.opendata.nhs.scot/dataset/6dbdd466-45e3-4348-9ee3-1eac72b5a592/resource/9b99e278-b8d8-47df-8d7a-a8cf98519ac1/download/daily_vacc_age_sex_20220105.csv")
 
-#read in locally created manual file for ages 100
+#read in manual file for ages 100
 #need to have this in so can widen x-axis so not drop off at 82
-#is Vaccination 100.csv file in root folder (https://github.com/tomfowler31/Ridgeline_Plot_Vaccination) 
 Vaccination_100 <- read_csv("learnr-intro-master/Vaccination 100.csv",
 col_types = cols(Viz_Date = col_date(format = "%d/%m/%Y")))
 
@@ -88,20 +88,25 @@ vaccdata <- vaccdata %>%
 #prep dataset for viz to only include relevant rows and 2021
 viz_vaccdata <- vaccdata %>%
 filter(Viz_Include == "Y") %>%
-filter(Viz_ages > 0) %>%
+filter(Viz_ages >= 0) %>%
 filter(year(Viz_Date)==2021) %>%
 select(Viz_Date,Sex, AgeGroup,Dose, Viz_ages, NumberVaccinated, Viz_DateMMYY)
 
 #union in Vaccination_100 to include manual data
 full_viz_data <-bind_rows(viz_vaccdata, Vaccination_100)
 
-ggplot(full_viz_data, aes(x=Viz_ages, 
-                          y = Viz_DateMMYY, 
-                          fill = Dose, colour = Dose))+
-    geom_density_ridges(alpha=0.4, 
-                        aes(height=..density.., 
+ggplot(full_viz_data, 
+#aesthetics
+          aes(x = Viz_ages, 
+              y = fct_rev(as.factor(Viz_DateMMYY)), #reverses the Y Axis for most recent month
+              fill = Dose,
+              colour = Dose))+
+            
+    geom_density_ridges(alpha=0.4, #alpha is the opacity of the colour
+                        aes(height =..density.., 
                             weight = NumberVaccinated), 
-                        stat = "density", scale = 1.5)+
+                            stat = "density", 
+                            scale = 1.5)+  
     theme_classic()+
     theme(
         legend.position = "bottom",
@@ -109,8 +114,7 @@ ggplot(full_viz_data, aes(x=Viz_ages,
         plot.title = element_text(hjust = 0.5)
 
     )+
-    labs(title = "Volume of Vaccinations in Scotland 2021 by month by dose and age band",      
-    caption="Data from https://www.opendata.nhs.scot/ | Inspired by @MathiasLeroy_ & @VictimOfMaths | Plot by @tomfowlerPHS")+
+    labs(title = "Volume of Vaccinations in Scotland 2021 by month by dose and age band",      caption="Data from https://www.opendata.nhs.scot/ | Inspired by @MathiasLeroy_ & @VictimOfMaths | Plot by @tomfowlerPHS")+
     ylab("Month")+
     xlab("Age")+
-    scale_x_continuous(breaks = scales::pretty_breaks(n = 6))     
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 6))
