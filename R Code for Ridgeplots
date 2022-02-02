@@ -1,4 +1,4 @@
-#inspired by https://twitter.com/MathiasLeroy_/status/1470785658537062407 want to recreate for Scotland
+#inspired by https://twitter.com/MathiasLeroy_/status/1470785658537062407 (in Python) wanted to recreate for Scotland using R
 
 # library
 library(tidyverse)
